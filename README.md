@@ -1,6 +1,4 @@
-# MORiA
-## Mechanically Oriented Radio Antenna
+# MAPS
+## Multidirectional Antenna Pointing Systen
 
-This is a patch antenna (directional antenna) for use on top of the van, automatically orienting itself towards the balloon using a Raspberry Pi controlling three linear actuators anchored to its underside in a triangle formation.
-
-Orienting the antenna towards the balloon at all times ensures much better connectivity and communication with the payloads than before.
+This project consists of using three linear actuators to control the orientation of a patch antenna. This way, the antenna can be kept pointed towards the balloon at any given time, which should improve the reliability of the radio communication systems. It will be controlled with a Raspberry Pi unit.
