@@ -4,8 +4,8 @@
  * http://hertaville.com/2012/11/18/introduction-to-accessing-the-raspberry-pis-gpio-in-c/
  */
 
-#ifndef GPIO_CLASS_H
-#define GPIO_CLASS_H
+#ifndef GPIO_CLASS_H_
+#define GPIO_CLASS_H_
 
 #include <string>
 using namespace std;
