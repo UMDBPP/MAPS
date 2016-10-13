@@ -1,5 +1,5 @@
-def ViewAngle(origin_coordinates_lla, target_coordinates_lla):
-#   calculates azimuth_angle (horizontal angle) and elevation_angle (vertical angle) to a point given an origin and target
+def ViewAngle(origin_lla, target_lla):
+#   calculates Az,El to a point given an origin and target
 #       from algorithm found at http://gis.stackexchange.com/questions/58923/calculate-view-angle
 #
 #       input:
@@ -7,47 +7,48 @@ def ViewAngle(origin_coordinates_lla, target_coordinates_lla):
 #       target - 3 tuple of (lat [deg], lng [deg], alt[m]) giving location of target
 #
 #       output:
-#       2 element tuple contining azimuth_angle,elevation_angle in deg
+#       2 element tuple contining Az,El in deg
+#
 
     import math
 
     # convert origin coordinates from LLA to ECEF
-    origin_coordinates_ecef = CoordinatesToECEF(origin_coordinates_lla[0], origin_coordinates_lla[1], origin_coordinates_lla[2]);
+    origin_ecef = llhxyz(origin_lla[0], origin_lla[1], origin_lla[2]);
 
     # convert target coordinates from LLA to ECEF
-    target_coordinates_ecef = CoordinatesToECEF(target_coordinates_lla[0], target_coordinates_lla[1], target_coordinates_lla[2]);
+    target_ecef = llhxyz(target_lla[0], target_lla[1], target_lla[2]);
 
 # Given two points (x,y,z) and (x',y',z') in an earth-centered coordinate system,
 # the vector from the first to the second is (dx,dy,dz) = (x'-x, y'-y, z'-z).
 
-    x = origin_coordinates_ecef[0];
-    y = origin_coordinates_ecef[1];
-    z = origin_coordinates_ecef[2];
-    dx = target_coordinates_ecef[0] - x;
-    dy = target_coordinates_ecef[1] - y;
-    dz = target_coordinates_ecef[2] - z;
+    x = origin_ecef[0];
+    y = origin_ecef[1];
+    z = origin_ecef[2];
+    dx = target_ecef[0] - x;
+    dy = target_ecef[1] - y;
+    dz = target_ecef[2] - z;
 
-# # Elevation
+## Elevation
 
-# To determine the elevation_angle angle we project the difference vector, dx, into the
+# To determine the elevation angle we project the difference vector, dx, into the
 # position vector at the observer, which is in the radial direction. From this we
 # projection we can determine the angle of the dx from the radial vector, which is
-# the elevation_angle.
+# the elevation.
 
 #   cos(el) = (x dot dx) / (norm(x) * norm(dx))
 #   cos(el) = (x dot dx) / sqrt(x dot x) * sqrt(dx dot dx))
 #   cos(el) = (x dot dx) / sqrt(x^2 * dx^2)
 #   cos(el) = (x*dx + y*dy + z*dz) / sqrt((x**2+y**2+z**2)*(dx**2+dy**2+dz**2))
-    cosine_of_elevation_angle = (x * dx + y * dy + z * dz) / math.sqrt((x ** 2 + y ** 2 + z ** 2) * (dx ** 2 + dy ** 2 + dz ** 2));
-    elevation_angle = math.acos(cosine_of_elevation_angle);
+    cosEl = (x*dx + y*dy + z*dz) / math.sqrt((x**2+y**2+z**2)*(dx**2+dy**2+dz**2));
+    El =  math.acos(cosEl);
     
 #   the el angle in spherical coordinates is defined from vertical. To convert it to the
 #   standard notion of el (in relation to horizon), subtract from 90deg
-    elevation_angle = math.pi / 2 - elevation_angle;
+    El = math.pi/2 - El;
 
-# # Azimuth
+## Azimuth
     
-#   For azimuth_angle, we need a level vector (u,v,w) that points due north. One such vector at the location
+#   For Az, we need a level vector (u,v,w) that points due north. One such vector at the location
 #   (x,y,z) is (-z*x, -z*y, x^2+y^2). (The inner product of these two vectors is zero,
 #   proving it is orthogonal to the radial direction, ie it is level with the horizon.
 #   Its projection onto the Equatorial plane is proportional to (-x,-y) which points directly inward,
@@ -55,87 +56,126 @@ def ViewAngle(origin_coordinates_lla, target_coordinates_lla):
 #   These two calculations confirm that this is indeed the desired vector). Therefore
 
 #   Cos(azimuth) = (-z*x*dx - z*y*dy + (x**2+y**2)*dz) / Sqrt((x**2+y**2)(x**2+y**2+z**2)(dx**2+dy**2+dz**2))
-    cosine_of_azimuth_angle = (-z * x * dx - z * y * dy + (x ** 2 + y ** 2) * dz) / math.sqrt((x ** 2 + y ** 2) * (x ** 2 + y ** 2 + z ** 2) * (dx ** 2 + dy ** 2 + dz ** 2));
+    cosAz = (-z*x*dx - z*y*dy + (x**2+y**2)*dz) / math.sqrt((x**2+y**2)*(x**2+y**2+z**2)*(dx**2+dy**2+dz**2));
 
 #   We also need the sine of the azimuth, which is similarly obtained once we know a
 #   vector pointing due East (locally). Such a vector is (-y, x, 0), because it is
 #   perpendicular to (x,y,z) (the up direction) and the northern direction. Therefore
     
 #     Sin(azimuth) = (-y*dx + x*dy) / Sqrt((x**2+y**2)*(dx**2+dy**2+dz**2))
-    sine_of_azimuth_angle = (-y * dx + x * dy) / math.sqrt((x ** 2 + y ** 2) * (dx ** 2 + dy ** 2 + dz ** 2));
+    sinAz = (-y*dx + x*dy) / math.sqrt((x**2+y**2)*(dx**2+dy**2+dz**2));
 
 #   These values enable us to recover the azimuth as the inverse tangent of the cosine and sine.
-    azimuth_angle = math.atan2(sine_of_azimuth_angle, cosine_of_azimuth_angle);
+    Az = math.atan2(sinAz,cosAz);
 
-    # wrap azimuth angle if its less than zero
-    if(azimuth_angle < 0):
-        azimuth_angle = azimuth_angle + 2 * math.pi;
+    # wrap az angle if its less than zero
+    if(Az < 0):
+        Az = Az+2*math.pi;
 
-    # output angles in degrees
-    return [azimuth_angle * 180 / math.pi, elevation_angle * 180 / math.pi]
+    # convert to deg and output
+    return [Az*180/math.pi, El*180/math.pi]
 
 
-def CoordinatesToECEF(latitude, longitude, altitude_m):
+def llhxyz(flat,flon, altm):
 #         lat,lon,height to xyz vector
 #       adapted from javascript from http://www.oc.nps.edu/oc2902w/coord/llhxyz.htm
 # 
 #      input:
-#           latitude      geodetic latitude in deg
-#           longitude              longitude in deg
-#           altitude_m             altitude in meters
+#           flat      geodetic latitude in deg
+#           flon      longitude in deg
+#           altkm     altitude in km
 #      output:
-#           returns vector x 3 long ECEF in meters
+#           returns vector x 3 long ECEF in km
+# 
 
     import math
-
-# WGS84 and Earth Constants
-    ellipsoid_semimajor_axis_m = 6378137;
-    flattening_factor = 1.0 / 298.257223563;
-    ellipsoid_semiminor_axis_m = ellipsoid_semimajor_axis_m * (1.0 - flattening_factor);
-    eccentricity_squared = 1 - ellipsoid_semiminor_axis_m * ellipsoid_semiminor_axis_m / (ellipsoid_semimajor_axis_m * ellipsoid_semimajor_axis_m);
     
-    cosine_of_latitude = math.cos(latitude * math.pi / 180.0);
-    sine_of_latitude = math.sin(latitude * math.pi / 180.0);
-    cosine_of_longitude = math.cos(longitude * math.pi / 180.0);
-    sine_of_longitude = math.sin(longitude * math.pi / 180.0);
+    altkm = altm * 0.001;
 
-    radii = RadiiOfCurvature(ellipsoid_semimajor_axis_m, ellipsoid_semiminor_axis_m, latitude);
-    rn = radii[2];
+    #initalize constants
+    K = LoadK();
 
-    x = (rn + altitude_m) * cosine_of_latitude * cosine_of_longitude;
-    y = (rn + altitude_m) * cosine_of_latitude * sine_of_longitude;
-    z = ((1 - eccentricity_squared) * rn + altitude_m) * sine_of_latitude;
+    clat = math.cos(K['d2r']*flat);
+    slat = math.sin(K['d2r']*flat);
+    clon = math.cos(K['d2r']*flon);
+    slon = math.sin(K['d2r']*flon);
 
-    ECEF = [x, y, z];
-    return ECEF;
+    rrnrm  = radcur(K, flat);
+    rn     = rrnrm[2];
 
-def RadiiOfCurvature(semimajor_axis, semiminor_axis, latitude):
-#        compute the radii at the geodetic latitude (in degrees)
+    ecc    = K['EARTH_Ecc'];
+    esq    = ecc*ecc;
+
+    x      =  (rn + altkm) * clat * clon;
+    y      =  (rn + altkm) * clat * slon;
+    z      =  ( (1-esq)*rn + altkm ) * slat;
+
+    xvec = [x, y, z];
+    return xvec;
+
+def radcur(K, lat):
+#        compute the radii at the geodetic latitude lat (in degrees)
 #      
 #      input:
-#                latitude       geodetic latitude in degrees
+#                lat       geodetic latitude in degrees
 #      output:   
-#                radii     an array 3 long
-#                          r,  rn,  rm
-
+#                rrnrm     an array 3 long
+#                          r,  rn,  rm   in km
+# 
+#
     import math
     
-    eccentricity_squared = 1 - ((semimajor_axis * semimajor_axis) / (semiminor_axis * semiminor_axis));
+    a     = K['EARTH_A'];
+    b     = K['EARTH_B'];
 
-    cosine_of_latitude = math.cos(latitude * math.pi / 180.0);
-    sine_of_latitude = math.sin(latitude * math.pi / 180.0);
+    asq   = a*a;
+    bsq   = b*b;
+    eccsq  =  1 - bsq/asq;
+    ecc = math.sqrt(eccsq);
 
-    dsq = 1.0 - eccentricity_squared * (sine_of_latitude * sine_of_latitude);
-    d = math.sqrt(dsq);
+    clat  =  math.cos(K['d2r']*lat);
+    slat  =  math.sin(K['d2r']*lat);
 
-    rn = semimajor_axis / d;
-    rm = rn * (1.0 - eccentricity_squared) / dsq;
+    dsq   =  1.0 - eccsq * slat * slat;
+    d     =  math.sqrt(dsq);
 
-    rho = rn * cosine_of_latitude;
-    z = (1.0 - eccentricity_squared) * rn * sine_of_latitude;
-    radius_squared = rho * rho + z * z;
-    r = math.sqrt(radius_squared);
+    rn    =  a/d;
+    rm    =  rn * (1.0 - eccsq ) / dsq;
 
-    radii = [r, rn, rm];
+    rho   =  rn * clat;
+    z     =  (1.0 - eccsq ) * rn * slat;
+    rsq   =  rho*rho + z*z;
+    r     =  math.sqrt( rsq );
 
-    return radii
+    rrnrm  =  [r, rn, rm];
+
+    return rrnrm
+
+def LoadK():
+# load earth model constants
+    import math
+
+    K = {};
+# WGS84 Earth Constants
+    a =  6378.137;
+    f =  1.0/298.257223563;
+    b =  a * ( 1.0 - f );
+    K['wgs84a'] = a;
+    K['wgs84f'] = f;
+    K['wgs84b'] = b;
+    
+# Earth constants
+    f        =  1-b/a;
+    eccsq    =  1 - b*b/(a*a);
+    ecc      =  math.sqrt(eccsq);
+
+    K['EARTH_A'] = a;
+    K['EARTH_B'] = b;
+    K['EARTH_F'] = f;
+    K['EARTH_Ecc'] = ecc;
+    K['EARTH_Esq'] = eccsq;
+    
+# other constants
+    K['d2r'] =math.pi/180.0;
+    
+    return K
