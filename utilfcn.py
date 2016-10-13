@@ -1,25 +1,26 @@
 ########################################3
-## Utility Functions
+# # Utility Functions
     
-def cmd_mot(stepper,cmd):
+## TODO change stepper motor to linear actuator accessed via gpio
+def cmd_mot(stepper, cmd):
     # determine direction
     if(cmd > 0):
         mot_dir = Adafruit_MotorHAT.FORWARD;
     stepper.step(1, mot_dir, Adafruit_MotorHAT.MICROSTEP)
     return 0;
     
-def calc_base_attitude(mag, accel, forward = (1,0,0) , up = (0,0,1)):
+def calc_base_attitude(mag, accel, forward=(1, 0, 0) , up=(0, 0, 1)):
     import math
     
     # calculate angle between up (base frame) and up (earth frame)
     # el_offset = acos( (accel dot up)/(norm(accel)*norm(up)) )
-    el_offset = math.acos( (accel[0]*up[0]+accel[1]*up[1]+accel[2]*up[2]) / (math.sqrt(accel[0]**2+accel[1]**2+accel[2]**2)*math.sqrt(up[0]**2 + up[1]**2 + up[2]**2) ));
-    el_offset = el_offset * 180/math.pi;
+    el_offset = math.acos((accel[0] * up[0] + accel[1] * up[1] + accel[2] * up[2]) / (math.sqrt(accel[0] ** 2 + accel[1] ** 2 + accel[2] ** 2) * math.sqrt(up[0] ** 2 + up[1] ** 2 + up[2] ** 2)));
+    el_offset = el_offset * 180 / math.pi;
 
     # calculate angle between forward (base frame) and north (earth frame)
     # el_offset = acos( (north dot forward)/(norm(north)*norm(forward)) )
-    az_offset = math.acos( (mag[0]*forward[0]+mag[1]*forward[1]+mag[2]*forward[2]) / (math.sqrt(mag[0]**2+mag[1]**2+mag[2]**2)*math.sqrt(forward[0]**2 + forward[1]**2 + forward[2]**2) ));
-    az_offset = az_offset * 180/math.pi;
+    az_offset = math.acos((mag[0] * forward[0] + mag[1] * forward[1] + mag[2] * forward[2]) / (math.sqrt(mag[0] ** 2 + mag[1] ** 2 + mag[2] ** 2) * math.sqrt(forward[0] ** 2 + forward[1] ** 2 + forward[2] ** 2)));
+    az_offset = az_offset * 180 / math.pi;
     
     return [az_offset, el_offset];
 
@@ -44,12 +45,12 @@ def ini2dict(settings_filename):
 
 def validate_settings(d):
     print('Validating settings')
-    expected_keys = ['Debug','DataIngest','Program','Attitude','Motors'];
+    expected_keys = ['Debug', 'DataIngest', 'Program', 'Attitude', 'Motors'];
     key_present = [name in d for name in expected_keys];
     missing_keys = [i for i, x in enumerate(key_present) if x == False];
     missing_sections = ', '.join([expected_keys[i] for i in missing_keys]);
     if not all(key_present):
-        print('Invalid settings file. Missing sections: %s' % (missing_sections) )
+        print('Invalid settings file. Missing sections: %s' % (missing_sections))
         return 0;
     else:
         return 1;
@@ -58,7 +59,7 @@ def write_ex_ini():
     import configparser
     
     with open("Example_settings.ini", 'w') as fileobject:
-        ex_config = configparser.RawConfigParser(allow_no_value = True)
+        ex_config = configparser.RawConfigParser(allow_no_value=True)
         ex_config.add_section('Debug')
         ex_config.set('Debug', 'Debug', 'True')
         ex_config.set('Debug', '# flag which sets the program in debug mode')
@@ -95,11 +96,11 @@ def write_ex_ini():
         
         ex_config.write(fileobject)
 
-    #print('Error opening file. Could not write example file');
+    # print('Error opening file. Could not write example file');
     return 1;
 
 def str2bool(s):
-    return s.lower() in ['true','t','yes']
+    return s.lower() in ['true', 't', 'yes']
 
 def setting2floattuple(s):
     return tuple([float(i) for i in s.split(',')])

@@ -7,7 +7,7 @@
 #   will adpot changes made to that file while running.
 #
 # Dependencies:
-#   viewangle.py
+#   ViewAngle.py
 #   utilfcn.py
 #
 # Purpose:
@@ -23,7 +23,8 @@
 import math, json, datetime, time, os
 
 # custom modules
-import viewangle, utilfcn
+import utilfcn
+import ViewAngle
 
 # name of file to read settings from
 settings_filename = "settings.ini";
@@ -34,17 +35,17 @@ IniCheckTime = datetime.datetime.now();
 
 # initalizations for non-debug mode
 if not settings['Debug']['debug']:
-##  Reading json
+# #  Reading json
     import urllib
 
-##  Gyro
+# #  Gyro
 #    see http://mpolaczyk.pl/raspberry-pi-series-l3gd20-gyroscope-minimu-9-v2-python-library/
     from L3GD20 import L3GD20
     import time
      
     # Communication object
     # FIXME: update busnum with i2c address
-    gyro = L3GD20(busId = 1, slaveAddr = 0x6b, ifLog = False, ifWriteBlock=False)
+    gyro = L3GD20(busId=1, slaveAddr=0x6b, ifLog=False, ifWriteBlock=False)
      
     # Configuration
     gyro.Set_PowerMode("Normal")
@@ -52,21 +53,21 @@ if not settings['Debug']['debug']:
     gyro.Set_AxisX_Enabled(True)
     gyro.Set_AxisY_Enabled(True)
     gyro.Set_AxisZ_Enabled(True)
-    gyro.Init() # Do measurements after Init!
+    gyro.Init()  # Do measurements after Init!
     gyro.Calibrate()
 
-##  Accel/Mag
+# #  Accel/Mag
 #   see https://github.com/adafruit/Adafruit-Raspberry-Pi-Python-Code/blob/master/Adafruit_LSM303/Adafruit_LSM303.py
     import Adafruit_LSM303
 
     # FIXME: update busnum with i2c address
     accelmag = Adafruit_LSM303(busnum=-1, debug=False, hires=True)
     
-##  Stepper Motors
+# #  Stepper Motors
     from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
 
     # create a default object, no changes to I2C address or frequency
-    mh = Adafruit_MotorHAT(addr = 0x60)
+    mh = Adafruit_MotorHAT(addr=0x60)
 
     # recommended for auto-disabling motors on shutdown!
     def turnOffMotors():
@@ -77,8 +78,8 @@ if not settings['Debug']['debug']:
      
     atexit.register(turnOffMotors)
 
-    AzStepper = mh.getStepper(200, int(settings['Motors']['azmotnum']))       # 200 steps/rev, motor port #1
-    ElStepper = mh.getStepper(200, int(settings['Motors']['elmotnum']))       # 200 steps/rev, motor port #2
+    AzStepper = mh.getStepper(200, int(settings['Motors']['azmotnum']))  # 200 steps/rev, motor port #1
+    ElStepper = mh.getStepper(200, int(settings['Motors']['elmotnum']))  # 200 steps/rev, motor port #2
 
     AzStepper.setSpeed(30)
     ElStepper.setSpeed(30)   
@@ -96,9 +97,9 @@ while utilfcn.str2bool(settings['Program']['run']):
         IniCheckTime = datetime.datetime.now();
 
     # FIXME: calculate time needed to sleep to maintain timing
-    time.sleep( 1/float(settings['Program']['cyclespersec']) )
+    time.sleep(1 / float(settings['Program']['cyclespersec']))
 
-    ## Read target data
+    # # Read target data
     if not settings['Debug']['debug']:
     # for final implementation, read from url on pi
 
@@ -118,7 +119,7 @@ while utilfcn.str2bool(settings['Program']['run']):
         target_lla = (float(data[data['TARGET']]['LAT']), float(data[data['TARGET']]['LNG']), float(data[data['TARGET']]['ALT']));
 
         # calculate the viewing angles from origin to target
-        [Az, El] = viewangle.ViewAngle(origin_lla,target_lla);
+        [Az, El] = ViewAngle.ViewAngle(origin_lla, target_lla);
 
         print('Az ang is %f deg' % (Az));
         print('El ang is %f deg' % (El));
@@ -132,7 +133,7 @@ while utilfcn.str2bool(settings['Program']['run']):
             else:
                 print('Failed Test');
 
-    ## Read IMU data
+    # # Read IMU data
     #   The AzEl angles calculated above are in relation to North and Up. To translate those directions into a command
     #   to send the motors, we need to know the orientation of the base of the pointing system. This is accomplished using
     #   a magnetometer to determine north and an accelerometer to determine the up directions, which are used to transform
@@ -155,16 +156,16 @@ while utilfcn.str2bool(settings['Program']['run']):
     up = utilfcn.setting2floattuple(settings['Attitude']['upvec']);
     
     # calculate the orientation of the base wrt North/Up
-    [az_offset,el_offset] = utilfcn.calc_base_attitude(mag, accel, forward, up);
+    [az_offset, el_offset] = utilfcn.calc_base_attitude(mag, accel, forward, up);
         
     az_cmd = Az + az_offset;
     el_cmd = El + el_offset;
 
-    ## Command motors
+    # # Command motors
     if not settings['Debug']['debug']:
 
-        utilfcn.cmd_mot(AzStepper,az_cmd)
-        utilfcn.cmd_mot(ElStepper,el_cmd)
+        utilfcn.cmd_mot(AzStepper, az_cmd)
+        utilfcn.cmd_mot(ElStepper, el_cmd)
         
     else:
         print('Az pointing error: %f' % (az_cmd))
