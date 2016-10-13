@@ -81,7 +81,7 @@ def write_ex_ini():
         ex_config.add_section('Target')
         ex_config.set('Target', '# Set the callsign respresenting the location of the antenna')
         ex_config.set('Target', 'Origin_Callsign', 'W3EAX_10')
-        ex_config.set('Target', '# Set the callsign of the target (may be comma seperated list)')
+        ex_config.set('Target', '# Set the callsign of the target')
         ex_config.set('Target', 'Target_Callsign', 'W3EAX_11')
 		ex_config.add_section('Attitude')
         ex_config.set('Attitude', '# vector defining upward direction in base coordinates')
